@@ -17,7 +17,7 @@ Navigate to [console.anyscale.com](https://console.anyscale.com) and sign in wit
 
 ---
 
-## Demo 1: Multi-modal AI
+## Demo 1: Multi-modal Batch Inference
 
 ### Preparation
 
@@ -42,17 +42,31 @@ Navigate to [console.anyscale.com](https://console.anyscale.com) and sign in wit
 
    ![Head and Worker Node Configuration](screenshots/04-node-selection.png)
 
-3. **Acquire nodes**
-   - Request node provisioning for the updated configuration
-
-4. **Launch the workspace**
+3. **Re-launch the workspace**
    - Start the workspace with the new configuration
 
 ### Demo Execution
 
+- Access notebooks/01-Batch-Inference.ipynb
 - **[Optional]** Modify the Batch Inference notebook to use Azure Blob Storage instead of S3
   - This demonstrates cloud-native integration with Azure services
   - Update storage connection strings and authentication as needed
+
+```
+import pyarrow.fs as pafs
+account_name=""
+azure_fs = pafs.AzureFileSystem(
+    account_name=account_name,
+)
+ds = ray.data.read_images(
+    "abfs://doggos-dataset/train",
+    include_paths=True,
+    shuffle="files",
+    filesystem=azure_fs
+)
+ds.take(1)
+```
+- Run through the notebook until "Monitoring and Debugging"
 
 ![Multi-Modal AI Workspace Running](screenshots/05-multimodal-workspace.png)
 
