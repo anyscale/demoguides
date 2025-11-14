@@ -8,7 +8,7 @@
 ## Prerequisites
 
 ### Step 1: Request Access
-Contact [omar@anyscale.com](mailto:omar@anyscale.com) for access to the demo Anyscale organization.
+Contact [msftdemos@anyscale.com](mailto:msftdemos@anyscale.com) for access to the demo Anyscale organization.
 
 ### Step 2: Login
 Navigate to [console.anyscale.com](https://console.anyscale.com) and sign in with your credentials.
@@ -42,7 +42,9 @@ Navigate to [console.anyscale.com](https://console.anyscale.com) and sign in wit
 
    ![Head and Worker Node Configuration](screenshots/04-node-selection.png)
 
-3. **Re-launch the workspace**
+3. **Modify the container image**
+   - Select image "anyscale/ray:2.49.1-py312-cu128"
+4. **Re-launch the workspace**
    - Start the workspace with the new configuration
 
 ### Demo Execution
