@@ -68,8 +68,6 @@ ds.take(1)
 ```
 - Run through the notebook until "Monitoring and Debugging"
 
-![Multi-Modal AI Workspace Running](screenshots/05-multimodal-workspace.png)
-
 ---
 
 ## Demo 2: Deploy LLMs
