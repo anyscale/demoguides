@@ -110,7 +110,7 @@ ds.take(1)
 
 3. **Set up HuggingFace token**
    - Sign in to [HuggingFace](https://huggingface.co/) (create an account if required)
-   - Navigate to Settings → Access Tokens
+   - Navigate to Profile → Access Tokens
    - Create a new token with read permissions
    - Copy the token for the next step
 
@@ -118,7 +118,7 @@ ds.take(1)
 
 4. **Configure environment variables**
    - In the Anyscale workspace settings, navigate to **Dependencies → Environment Variables**
-   - Add the following environment variable:
+   - Edit to Add the following environment variable:
      ```
      HF_TOKEN=<YOUR_HF_TOKEN>
      ```
@@ -126,21 +126,12 @@ ds.take(1)
 
    ![Environment Variables Configuration](screenshots/09-env-variables.png)
 
-5. **Acquire nodes**
-   - Request node provisioning for the updated configuration
-
-6. **Launch the workspace**
+5. **Launch the workspace**
    - Start the workspace with the new configuration
 
 ### Demo Execution
 
-- Demonstrate LLM deployment capabilities
-- Show model serving and inference functionality
-- Highlight integration with AKS and Azure ecosystem
-
-![Deploy LLMs Workspace Running](screenshots/10-deploy-llms-workspace.png)
-
-![LLM Inference Example](screenshots/11-llm-inference.png)
+- Follow the instructions in the notebook small-size-llm/notebook.ipynb
 
 ---
 
