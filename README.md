@@ -22,7 +22,7 @@
 ## Prerequisites
 
 ### Step 1: Request Access
-Contact [msftdemos@anyscale.com](mailto:msftdemos@anyscale.com) for access credentials to the demo Anyscale organization.
+Contact [omar@anyscale.com](mailto:omar@anyscale.com) for access credentials to the demo Anyscale organization.
 
 ### Step 2: Login
 Navigate to [console.anyscale.com](https://console.anyscale.com) and sign in with your credentials.
