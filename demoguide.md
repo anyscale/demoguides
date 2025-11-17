@@ -5,6 +5,20 @@
 
 ---
 
+## Table of Contents
+
+- [Prerequisites](#prerequisites)
+- [Demo 1: Multi-modal Batch Inference](#demo-1-multi-modal-batch-inference)
+  - [Preparation](#preparation)
+  - [Demo Execution](#demo-execution)
+- [Demo 2: Deploy LLMs](#demo-2-deploy-llms)
+  - [Preparation](#preparation-1)
+  - [Demo Execution](#demo-execution-1)
+- [Tips for a Successful Demo](#tips-for-a-successful-demo)
+- [Support](#support)
+
+---
+
 ## Prerequisites
 
 ### Step 1: Request Access
