@@ -36,10 +36,11 @@ Navigate to [console.anyscale.com](https://console.anyscale.com) and sign in wit
 ### Preparation
 
 1. **Launch a workspace with Multi-Modal AI template**
-   - From the Anyscale console, create a new workspace
+   - From the Anyscale console, create a new workspace (Create from template)
    - Select the "Multi-Modal AI" template
 
    ![Multi-Modal AI Template Selection](screenshots/02-multimodal-template.png)
+   - Launch the template
 
 2. **Modify compute configuration**
    - **Terminate the workspace** (if already running)
@@ -59,10 +60,13 @@ Navigate to [console.anyscale.com](https://console.anyscale.com) and sign in wit
 3. **Modify the container image**
    - Select image "anyscale/ray:2.49.1-py312-cu128"
 4. **Re-launch the workspace**
-   - Start the workspace with the new configuration
+   - Start the Workspace with the new configuration
+   - Observe Workspace logs for successful launch. Below is an example:
+   ![Example Worskpace Logs](screenshots/04b-sample-cluster-logs.png)
 
 ### Demo Execution
 
+- Navigate to the VSCode (not VSCode Desktop)
 - Access notebooks/01-Batch-Inference.ipynb
 - **[Optional]** Modify the Batch Inference notebook to use Azure Blob Storage instead of S3
   - This demonstrates cloud-native integration with Azure services
@@ -82,7 +86,7 @@ ds = ray.data.read_images(
 )
 ds.take(1)
 ```
-- Run through the notebook until "Monitoring and Debugging"
+- Run through the notebook until the section "Monitoring and Debugging" in the notebook
 
 ---
 
