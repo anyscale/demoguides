@@ -68,21 +68,15 @@ Navigate to [console.anyscale.com](https://console.anyscale.com) and sign in wit
 
 - Navigate to the VSCode (not VSCode Desktop)
 - Access notebooks/01-Batch-Inference.ipynb
-- **[Optional]** Modify the Batch Inference notebook to use Azure Blob Storage instead of S3
-  - This demonstrates cloud-native integration with Azure services
-  - Update storage connection strings and authentication as needed
+- **[Optional]** Modify the Batch Inference notebook to use a shared storage mount
+In the start of the section "Data ingestion" replace the code with a reference to S3 to:
 
 ```
-import pyarrow.fs as pafs
-account_name=""
-azure_fs = pafs.AzureFileSystem(
-    account_name=account_name,
-)
+# Load data.
 ds = ray.data.read_images(
-    "abfs://doggos-dataset/train",
-    include_paths=True,
+    "/mnt/shared_storage/doggos-dataset/train", 
+    include_paths=True, 
     shuffle="files",
-    filesystem=azure_fs
 )
 ds.take(1)
 ```
