@@ -66,7 +66,7 @@ Navigate to [console.anyscale.com](https://console.anyscale.com) and sign in wit
 
 ### Demo Execution
 
-- Navigate to the VSCode (not VSCode Desktop)
+- Navigate to the VSCode interface (not VSCode Desktop)
 - Access notebooks/01-Batch-Inference.ipynb
 - **[Optional]** Modify the Batch Inference notebook to use a shared storage mount
 In the start of the section "Data ingestion" replace the code with a reference to S3 to:
