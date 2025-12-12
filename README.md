@@ -102,9 +102,9 @@ ds.take(1)
      - To: `8CPU-32GB`
    - **Change the worker nodes:**
      - From: `Auto-select workers`
-     - To: `2 x L4` nodes
+     - To: `2 x A100` nodes
 
-   ![L4 Node Configuration](screenshots/07-l4-nodes.png)
+   ![A100 Node Configuration](screenshots/07-a100-nodes.png)
 
 3. **Set up HuggingFace token**
    - Sign in to [HuggingFace](https://huggingface.co/) (create an account if required)
@@ -129,7 +129,29 @@ ds.take(1)
 
 ### Demo Execution
 
+- Modify ```small-size-llm/notebook.ipynb``` as follows:
+1. ```accelerator_type="A100",``` instead of ```accelerator_type="L4"```
+1. Add your HuggingFace in the right locations (two locations)
+- Modify ```small-size-llm/serve_llama_3_1_8b.py``` as follows:
+1. ```accelerator_type="A100",``` instead of ```accelerator_type="L4"```
+- Modify ```small-size-llm/service.yaml``` as follows:
+```
+# service.yaml
+name: deploy-llama-3-8b
+image_uri: anyscale/ray-llm:2.50.1-py311-cu128 # Anyscale Ray Serve LLM image. Use `containerfile: ./Dockerfile` to use a custom Dockerfile.
+compute_config:
+  auto_select_worker_config: true 
+  head_node:
+    instance_type: 8CPU-32GB
+working_dir: .
+cloud:
+applications:
+  # Point to your app in your Python module
+  - import_path: serve_llama_3_1_8b:app
+```
 - Follow the instructions in the notebook small-size-llm/notebook.ipynb
+
+
 
 ---
 
