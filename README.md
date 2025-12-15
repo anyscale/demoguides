@@ -82,6 +82,7 @@ ds.take(1)
 ```
 - Run through the notebook until the section "Monitoring and Debugging" in the notebook
 
+Next open the training notebook
 ---
 
 ## Demo 2: Deploy LLMs
