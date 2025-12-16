@@ -161,7 +161,7 @@ applications:
 - Test the workflows in advance to familiarize yourself with the UI
 - Prepare talking points about AKS integration benefits
 - Have backup examples ready in case of any technical issues
-- Emphasize scalability and Azure-native features
+- Emphasize scalability and Azure-native features!!!
 
 ---
 
