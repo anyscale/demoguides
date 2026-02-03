@@ -133,7 +133,8 @@ ds.take(1)
 1. ```accelerator_type="A100",``` instead of ```accelerator_type="L4"```
 1. Add your HuggingFace in the right locations (two locations)
 - Modify ```small-size-llm/serve_llama_3_1_8b.py``` as follows:
-1. ```accelerator_type="A100",``` instead of ```accelerator_type="L4"```
+. ```accelerator_type="A100",``` instead of ```accelerator_type="L4"```
+- 
 - Modify ```small-size-llm/service.yaml``` as follows:
 ```
 # service.yaml
@@ -150,6 +151,74 @@ applications:
   - import_path: serve_llama_3_1_8b:app
 ```
 - Follow the instructions in the notebook small-size-llm/notebook.ipynb
+
+3. Modify the serve_llama_3_1_8b.py as follows:
+
+```python
+engine_kwargs=dict(max_model_len=8192, gpu_memory_utilization=0.78)
+```
+
+```python
+# serve_llama_3_1_8b.py
+from ray.serve.llm import LLMConfig, build_openai_app
+
+llm_config = LLMConfig(
+    model_loading_config=dict(
+        model_id="my-llama-3.1-8b",
+        # Using ungated model - no HF_TOKEN required
+        model_source="unsloth/Meta-Llama-3.1-8B-Instruct",
+    ),
+    # Use the GPU type available in your cluster:
+    # - A100 for this workspace (local deployment)
+    # - L4 for Anyscale Services (more commonly available)
+    accelerator_type="A100",
+    deployment_config=dict(
+        autoscaling_config=dict(
+            min_replicas=1,
+            max_replicas=2,
+        )
+    ),
+    engine_kwargs=dict(max_model_len=8192, gpu_memory_utilization=0.78),   
+)
+app = build_openai_app({"llm_configs": [llm_config]})
+```
+
+
+---
+
+## Deploy to production with Anyscale Services
+
+For production deployment, use Anyscale Services to deploy the Ray Serve app to a dedicated cluster without modifying the code. Anyscale ensures scalability, fault tolerance, and load balancing, keeping the service resilient against node failures, high traffic, and rolling updates.
+
+---
+
+### Launch the service
+
+Anyscale provides out-of-the-box images (`anyscale/ray-llm`) which come pre-loaded with Ray Serve LLM, vLLM, and all required GPU/runtime dependencies. This makes it easy to get started without building a custom image.
+
+Create your Anyscale Service configuration in a new `service.yaml` file:
+
+```yaml
+# service.yaml
+name: deploy-llama-3-8b
+image_uri: anyscale/ray-llm:2.49.0-py311-cu128 # Anyscale Ray Serve LLM image. Use `containerfile: ./Dockerfile` to use a custom Dockerfile.
+compute_config:
+  auto_select_worker_config: true 
+working_dir: .
+cloud:
+applications:
+  # Point to your app in your Python module
+  - import_path: serve_llama_3_1_8b:app
+```
+
+
+Deploy your service with the following command. Make sure to forward your Hugging Face token:
+
+```python 
+anyscale service deploy -f service.yaml --env HF_TOKEN=<YOUR-HUGGINGFACE-TOKEN>
+```
+
+
 
 
 
