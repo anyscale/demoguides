@@ -86,11 +86,10 @@ ds.take(1)
 
 ## Demo 2: Deploy LLMs
 
-### Preparation
-
-1. **Launch a workspace with Deploy LLMs template**
-   - From the Anyscale console, create a new workspace
-   - Select the "Deploy LLMs" template
+1. Modify small-size-llm/notebook.ipynb
+Use accelerator_type="A100" instead of accelerator_type="L4"
+Add your HuggingFace token in two locations: (1) Workspace Environment Variables, (2) export HF_TOKEN=... before serve run or --env HF_TOKEN=... when deploying
+   
 
    ![Deploy LLMs Template Selection](screenshots/06-deploy-llms-template.png)
 
@@ -107,10 +106,15 @@ ds.take(1)
    ![A100 Node Configuration](screenshots/07-a100-nodes.png)
 
 3. **Set up HuggingFace token**
-   - Sign in to [HuggingFace](https://huggingface.co/) (create an account if required)
-   - Navigate to Profile → Access Tokens
-   - Create a new token with read permissions
-   - Copy the token for the next step
+Create a HuggingFace access token so the service can download gated models like Llama. Follow these steps on HuggingFace:
+
+1.Sign in or create an account — Go to huggingface.co and sign in (or create a free account)
+2.Open Access Tokens — Click your profile icon (top right) → Settings → Access Tokens (or go directly to huggingface.co/settings/tokens)
+3.Create a new token — Click New token
+4.Name the token — Enter a name (e.g. anyscale-demo)
+5.Set permissions — Choose Read (sufficient for downloading models)
+6.Generate and copy — Click Generate token, then copy the token immediately (it is shown only once)
+7.Store it safely — You will use this token in the next step (Environment Variables)
 
    ![HuggingFace Token Creation](screenshots/08-huggingface-token.png)
 
@@ -129,15 +133,27 @@ ds.take(1)
 
 ### Demo Execution
 
-- Modify ```small-size-llm/notebook.ipynb``` as follows:
-1. ```accelerator_type="A100",``` instead of ```accelerator_type="L4"```
-1. Add your HuggingFace in the right locations (two locations)
-- Modify ```small-size-llm/serve_llama_3_1_8b.py``` as follows:
-. ```accelerator_type="A100",``` instead of ```accelerator_type="L4"```
-- 
-- Modify ```small-size-llm/service.yaml``` as follows:
-```
-# service.yaml
+Demo Execution
+1. Modify `small-size-llm/notebook.ipynb`
+Use `accelerator_type="A100"` instead of `accelerator_type="L4"`
+Add your HuggingFace token in two locations: 
+
+(1) Workspace Environment Variables, 
+(2) export HF_TOKEN=... before serve run or --env HF_TOKEN=... when deploying
+
+2. Modify `small-size-llm/serve_llama_3_1_8b.py`
+Use `accelerator_type="A100"` instead of `accelerator_type="L4"`
+Add `gpu_memory_utilization=0.78` to engine_kwargs
+
+Why `gpu_memory_utilization=0.78`? vLLM cannot detect memory that the system reserves for features such as ECC (error-correcting code), driver/firmware overhead, display output, and MIG/vGPU configurations. This can cause vLLM to attempt to allocate more memory than is available, resulting in OOM errors.
+
+For example, if using ECC takes 12% of total GPU memory, set `gpu_memory_utilization to 0.78` (100% − 12% ECC − 10% headroom = 78%).
+
+3. Modify small-size-llm/service.yaml
+Replace the file contents with:
+
+```python
+`# service.yaml
 name: deploy-llama-3-8b
 image_uri: anyscale/ray-llm:2.50.1-py311-cu128 # Anyscale Ray Serve LLM image. Use `containerfile: ./Dockerfile` to use a custom Dockerfile.
 compute_config:
@@ -150,13 +166,8 @@ applications:
   # Point to your app in your Python module
   - import_path: serve_llama_3_1_8b:app
 ```
-- Follow the instructions in the notebook small-size-llm/notebook.ipynb
 
-3. Modify the serve_llama_3_1_8b.py as follows:
-
-```python
-engine_kwargs=dict(max_model_len=8192, gpu_memory_utilization=0.78)
-```
+4. Final serve_llama_3_1_8b.py for execution
 
 ```python
 # serve_llama_3_1_8b.py
@@ -178,53 +189,42 @@ llm_config = LLMConfig(
             max_replicas=2,
         )
     ),
-    engine_kwargs=dict(max_model_len=8192, gpu_memory_utilization=0.78),   
+    engine_kwargs=dict(max_model_len=8192,gpu_memory_utilization=0.78),
 )
 app = build_openai_app({"llm_configs": [llm_config]})
 ```
 
+5. Follow the notebook
 
----
-
-## Deploy to production with Anyscale Services
-
+Follow the instructions in small-size-llm/notebook.ipynb
+Deploy to Production with Anyscale Services
 For production deployment, use Anyscale Services to deploy the Ray Serve app to a dedicated cluster without modifying the code. Anyscale ensures scalability, fault tolerance, and load balancing, keeping the service resilient against node failures, high traffic, and rolling updates.
 
----
+6. Launch the service
 
-### Launch the service
+Anyscale provides out-of-the-box images (anyscale/ray-llm) which come pre-loaded with Ray Serve LLM, vLLM, and all required GPU/runtime dependencies. This makes it easy to get started without building a custom image.
 
-Anyscale provides out-of-the-box images (`anyscale/ray-llm`) which come pre-loaded with Ray Serve LLM, vLLM, and all required GPU/runtime dependencies. This makes it easy to get started without building a custom image.
+7. Create your Anyscale Service configuration in a new service.yaml file:
 
-Create your Anyscale Service configuration in a new `service.yaml` file:
-
-```yaml
+```python
 # service.yaml
 name: deploy-llama-3-8b
-image_uri: anyscale/ray-llm:2.49.0-py311-cu128 # Anyscale Ray Serve LLM image. Use `containerfile: ./Dockerfile` to use a custom Dockerfile.
+image_uri: anyscale/ray-llm:2.50.1-py311-cu128 # Anyscale Ray Serve LLM image. Use `containerfile: ./Dockerfile` to use a custom Dockerfile.
 compute_config:
   auto_select_worker_config: true 
+  head_node:
+    instance_type: 8CPU-32GB
 working_dir: .
 cloud:
 applications:
   # Point to your app in your Python module
   - import_path: serve_llama_3_1_8b:app
 ```
+8. Deploy your service with the following command. Make sure to forward your Hugging Face token:
 
+`anyscale service deploy -f service.yaml --env HF_TOKEN=<YOUR-HUGGINGFACE-TOKEN>`
 
-Deploy your service with the following command. Make sure to forward your Hugging Face token:
-
-```python 
-anyscale service deploy -f service.yaml --env HF_TOKEN=<YOUR-HUGGINGFACE-TOKEN>
-```
-
-
-
-
-
----
-
-## Tips for a Successful Demo
+Tips for a Successful Demo:
 
 - Ensure nodes are provisioned before the demo to avoid wait times
 - Test the workflows in advance to familiarize yourself with the UI
@@ -232,8 +232,5 @@ anyscale service deploy -f service.yaml --env HF_TOKEN=<YOUR-HUGGINGFACE-TOKEN>
 - Have backup examples ready in case of any technical issues
 - Emphasize scalability and Azure-native features
 
----
-
-## Support
-
-For questions or issues, contact [ms-field-collab@anyscale.com](mailto:ms-field-collab@anyscale.com)
+Support
+For questions or issues, contact ms-field-collab@anyscale.com
