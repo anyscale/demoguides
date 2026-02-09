@@ -86,88 +86,51 @@ ds.take(1)
 
 ## Demo 2: Deploy LLMs
 
-1. Modify small-size-llm/notebook.ipynb
-Use accelerator_type="A100" instead of accelerator_type="L4"
-Add your HuggingFace token in two locations: (1) Workspace Environment Variables, (2) export HF_TOKEN=... before serve run or --env HF_TOKEN=... when deploying
-   
+### Prerequisites
 
-   ![Deploy LLMs Template Selection](screenshots/06-deploy-llms-template.png)
+#### 1. Configure Compute
 
-2. **Modify compute configuration**
-   - **Terminate the workspace** (if already running)
-   - Navigate to compute configuration settings
-   - **Change the head node:**
-     - From: `2CPU-8GB`
-     - To: `8CPU-32GB`
-   - **Change the worker nodes:**
-     - From: `Auto-select workers`
-     - To: `2 x A100` nodes
+- Terminate the workspace if it is already running.
+- Navigate to compute configuration settings.
+- Change the head node from `2CPU-8GB` to `8CPU-32GB`.
+- Change the worker nodes from `Auto-select workers` to `2 × A100`.
 
-   ![A100 Node Configuration](screenshots/07-a100-nodes.png)
+![A100 Node Configuration](screenshots/07-a100-nodes.png)
 
-3. **Set up HuggingFace token**
-Create a HuggingFace access token so the service can download gated models like Llama. Follow these steps on HuggingFace:
+#### 2. Create a HuggingFace Token
 
-1.Sign in or create an account — Go to huggingface.co and sign in (or create a free account)
-2.Open Access Tokens — Click your profile icon (top right) → Settings → Access Tokens (or go directly to huggingface.co/settings/tokens)
-3.Create a new token — Click New token
-4.Name the token — Enter a name (e.g. anyscale-demo)
-5.Set permissions — Choose Read (sufficient for downloading models)
-6.Generate and copy — Click Generate token, then copy the token immediately (it is shown only once)
-7.Store it safely — You will use this token in the next step (Environment Variables)
+If you don't already have a HuggingFace account, sign up at https://huggingface.co/join. You must verify your email address before you can create tokens.
 
-   ![HuggingFace Token Creation](screenshots/08-huggingface-token.png)
+Follow these steps to generate an access token:
 
-4. **Configure environment variables**
-   - In the Anyscale workspace settings, navigate to **Dependencies → Environment Variables**
-   - Edit to Add the following environment variable:
-     ```
-     HF_TOKEN=<YOUR_HF_TOKEN>
-     ```
-   - Replace `<YOUR_HF_TOKEN>` with your actual HuggingFace token
+1. Log in to https://huggingface.co.
+2. Click your profile avatar in the top-right corner and select **Settings**.
+3. In the left sidebar, click **Access Tokens**.
+4. Click the **+ Create new token** button.
+5. Give the token a descriptive name (e.g., `anyscale-demo`).
+6. Set the role to **Read** — this is sufficient for downloading gated models. (Use **Write** only if you need to push models or datasets.)
+7. Click **Create token**.
+8. A pop-up will display your new token. Click **Copy** to copy it to your clipboard immediately — you will not be able to view the full token value again after closing this dialog.
+9. Store the token in a secure location (e.g., a password manager). Do not commit it to version control.
 
-   ![Environment Variables Configuration](screenshots/09-env-variables.png)
+![HuggingFace Token Creation](screenshots/08-huggingface-token.png)
 
-5. **Launch the workspace**
-   - Start the workspace with the new configuration
+**Gated model access:** The Llama 3.1 model used in this demo is a gated model. Before your token will work, you must also visit the model page at https://huggingface.co/meta-llama/Meta-Llama-3.1-8B-Instruct, review the license, and click **Request access**. Approval is usually granted within minutes.
 
-### Demo Execution
+**Security tip:** Create a separate token for each use case (local dev, CI/CD, demo). This way you can revoke one token without affecting others. You can manage and delete tokens at any time from the **Access Tokens** settings page.
 
-Demo Execution
-1. Modify `small-size-llm/notebook.ipynb`
-Use `accelerator_type="A100"` instead of `accelerator_type="L4"`
-Add your HuggingFace token in two locations: 
+#### 3. Set the HuggingFace Token (required in two places)
 
-(1) Workspace Environment Variables, 
-(2) export HF_TOKEN=... before serve run or --env HF_TOKEN=... when deploying
+| Location | How to set |
+|----------|-----------|
+| **Workspace** | Anyscale → Dependencies → Environment Variables → add `HF_TOKEN=<YOUR_HF_TOKEN>` |
+| **Shell / deployment** | export in the terminal or pass `--env HF_TOKEN=...` when deploying |
 
-2. Modify `small-size-llm/serve_llama_3_1_8b.py`
-Use `accelerator_type="A100"` instead of `accelerator_type="L4"`
-Add `gpu_memory_utilization=0.78` to engine_kwargs
+#### 4. Prepare the Source Files
 
-Why `gpu_memory_utilization=0.78`? vLLM cannot detect memory that the system reserves for features such as ECC (error-correcting code), driver/firmware overhead, display output, and MIG/vGPU configurations. This can cause vLLM to attempt to allocate more memory than is available, resulting in OOM errors.
+Before launching the workspace, create or update the following files inside `small-size-llm/`.
 
-For example, if using ECC takes 12% of total GPU memory, set `gpu_memory_utilization to 0.78` (100% − 12% ECC − 10% headroom = 78%).
-
-3. Modify small-size-llm/service.yaml
-Replace the file contents with:
-
-```python
-`# service.yaml
-name: deploy-llama-3-8b
-image_uri: anyscale/ray-llm:2.50.1-py311-cu128 # Anyscale Ray Serve LLM image. Use `containerfile: ./Dockerfile` to use a custom Dockerfile.
-compute_config:
-  auto_select_worker_config: true 
-  head_node:
-    instance_type: 8CPU-32GB
-working_dir: .
-cloud:
-applications:
-  # Point to your app in your Python module
-  - import_path: serve_llama_3_1_8b:app
-```
-
-4. Final serve_llama_3_1_8b.py for execution
+**serve_llama_3_1_8b.py**
 
 ```python
 # serve_llama_3_1_8b.py
@@ -176,61 +139,92 @@ from ray.serve.llm import LLMConfig, build_openai_app
 llm_config = LLMConfig(
     model_loading_config=dict(
         model_id="my-llama-3.1-8b",
-        # Using ungated model - no HF_TOKEN required
-        model_source="unsloth/Meta-Llama-3.1-8B-Instruct",
+        # For gated models, HF_TOKEN must be provided via env.
+        model_source="meta-llama/Meta-Llama-3.1-8B-Instruct",  # <-- CHANGED: was "unsloth/Meta-Llama-3.1-8B-Instruct", now uses official gated Meta repo
     ),
-    # Use the GPU type available in your cluster:
-    # - A100 for this workspace (local deployment)
-    # - L4 for Anyscale Services (more commonly available)
     accelerator_type="A100",
     deployment_config=dict(
-        autoscaling_config=dict(
-            min_replicas=1,
-            max_replicas=2,
-        )
+        autoscaling_config=dict(min_replicas=1, max_replicas=2),
     ),
-    engine_kwargs=dict(max_model_len=8192,gpu_memory_utilization=0.78),
+    engine_kwargs=dict(max_model_len=8192, gpu_memory_utilization=0.78),
 )
+
 app = build_openai_app({"llm_configs": [llm_config]})
 ```
 
-5. Follow the notebook
+**Why `gpu_memory_utilization=0.78`?**
 
-Follow the instructions in small-size-llm/notebook.ipynb
-Deploy to Production with Anyscale Services
-For production deployment, use Anyscale Services to deploy the Ray Serve app to a dedicated cluster without modifying the code. Anyscale ensures scalability, fault tolerance, and load balancing, keeping the service resilient against node failures, high traffic, and rolling updates.
+vLLM may attempt to use all reported GPU memory. Some GPU features (ECC, driver/firmware overhead, MIG/vGPU) reserve memory and can cause OOMs. Setting this value to `0.78` leaves safe headroom (roughly 100% − 12% ECC − 10% headroom ≈ 78%).
 
-6. Launch the service
+**service.yaml**
 
-Anyscale provides out-of-the-box images (anyscale/ray-llm) which come pre-loaded with Ray Serve LLM, vLLM, and all required GPU/runtime dependencies. This makes it easy to get started without building a custom image.
-
-7. Create your Anyscale Service configuration in a new service.yaml file:
-
-```python
-# service.yaml
+```yaml
 name: deploy-llama-3-8b
-image_uri: anyscale/ray-llm:2.50.1-py311-cu128 # Anyscale Ray Serve LLM image. Use `containerfile: ./Dockerfile` to use a custom Dockerfile.
+image_uri: anyscale/ray-llm:2.50.1-py311-cu128  # <-- NOTE: pre-built image, use containerfile: ./Dockerfile for custom
 compute_config:
-  auto_select_worker_config: true 
+  auto_select_worker_config: true  # <-- NOTE: service auto-selects workers; workspace uses manual 2×A100 config separately
   head_node:
     instance_type: 8CPU-32GB
 working_dir: .
 cloud:
 applications:
-  # Point to your app in your Python module
   - import_path: serve_llama_3_1_8b:app
 ```
-8. Deploy your service with the following command. Make sure to forward your Hugging Face token:
 
-`anyscale service deploy -f service.yaml --env HF_TOKEN=<YOUR-HUGGINGFACE-TOKEN>`
+**Note on `auto_select_worker_config`:** The service YAML uses `auto_select_worker_config: true`, which lets Anyscale pick the best worker type automatically. The manual `2 × A100` configuration you set in Step 1 applies to the workspace only; the service manages its own workers independently.
 
-Tips for a Successful Demo:
+**notebook.ipynb**
 
-- Ensure nodes are provisioned before the demo to avoid wait times
-- Test the workflows in advance to familiarize yourself with the UI
-- Prepare talking points about AKS integration benefits
-- Have backup examples ready in case of any technical issues
-- Emphasize scalability and Azure-native features
+Open `small-size-llm/notebook.ipynb` and replace any occurrence of `accelerator_type="L4"` with `accelerator_type="A100"`.
+<!-- CHANGED: must match the A100 GPU configured in Step 1 -->
+
+### 5. Launch the Workspace and Verify It Is Running
+
+Launch the workspace with the new compute and environment settings. Before proceeding, confirm the workspace and all nodes are up:
+
+**Via the Anyscale UI:**
+
+- Open the workspace in the Anyscale Console.
+- Check the workspace status indicator in the top-right corner — it should show **Running**.
+- Click the status badge to open the **Cluster Panel** and verify that the head node (`8CPU-32GB`) and worker nodes (`2 × A100`) are all provisioned and healthy.
+
+**Via the CLI:**
+
+```bash
+# Check workspace status by name
+anyscale workspace status --name <YOUR_WORKSPACE_NAME>
+
+# Or wait until the workspace reaches RUNNING state (times out after 30 min by default)
+anyscale workspace wait --name <YOUR_WORKSPACE_NAME>
+```
+
+**Tip:** If nodes take longer than expected to provision, check the Cluster Panel for pending or failed nodes. Common causes include insufficient cloud quota or unavailable instance types in your region.
+
+### 6. Deploy the Service
+
+Open a terminal inside the Anyscale workspace (either the built-in web terminal or VS Code integrated terminal). Navigate to the `small-size-llm/` directory, export your HuggingFace token, and deploy:
+
+```bash
+cd small-size-llm/
+export HF_TOKEN=<YOUR_HF_TOKEN>
+anyscale service deploy -f service.yaml --env HF_TOKEN=$HF_TOKEN
+```
+
+Quick verification that the token is set:
+
+```bash
+echo "$HF_TOKEN"
+```
+
+Once the service status shows **Running**, follow `small-size-llm/notebook.ipynb` to validate the deployed endpoint.
+
+### Tips for a Successful Demo
+
+- **Provision nodes early.** Spin up the workspace well before the demo to avoid wait times.
+- **Dry-run the full workflow in advance** so you are familiar with the UI and any potential issues.
+- **Keep the HF token secure.** Only provide it via workspace environment variables or the `--env` deploy flag.
+- **Prepare backup examples** in case of technical issues.
+- **Highlight production benefits** such as AKS integration, scalability, and Azure-native features.
 
 Support
 For questions or issues, contact ms-field-collab@anyscale.com
